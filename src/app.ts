@@ -17,7 +17,7 @@ app.use("/api/orders", OrderRoutes);
 app.use("/api/users", UserRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Ecommerce Inventory Server is running..!");
+  res.send("Ecommerce  Server is running..!");
 });
 
 // Start Server
