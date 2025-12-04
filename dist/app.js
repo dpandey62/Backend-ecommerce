@@ -1,27 +1,45 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const product_routes_js_1 = require("./app/modules/products/product.routes.js");
-const order_routes_js_1 = require("./app/modules/orders/order.routes.js");
-const user_routes_js_1 = require("./app/modules/users/user.routes.js");
-const app = (0, express_1.default)();
-const port = process.env.PORT || 5000;
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import { ProductRoutes } from "./app/modules/products/product.routes.js";
+import { OrderRoutes } from "./app/modules/orders/order.routes.js";
+import { UserRoutes } from "./app/modules/users/user.routes.js";
+
+dotenv.config();
+
+const app = express();
+const db_url = process.env.DB_URL;
+
+// MongoDB persistent connection (required for Vercel)
+let isConnected = false;
+
+async function connectDB() {
+    if (isConnected) return;
+
+    try {
+        const db = await mongoose.connect(db_url);
+        isConnected = db.connections[0].readyState === 1;
+        console.log("MongoDB Connected");
+    } catch (err) {
+        console.error("MongoDB Error:", err.message);
+    }
+}
+
+connectDB();
+
 // Middleware
-app.use(express_1.default.json());
-app.use((0, cors_1.default)());
+app.use(express.json());
+app.use(cors());
+
 // Routes
-app.use("/api/products", product_routes_js_1.ProductRoutes);
-app.use("/api/orders", order_routes_js_1.OrderRoutes);
-app.use("/api/users", user_routes_js_1.UserRoutes);
+app.use("/api/products", ProductRoutes);
+app.use("/api/orders", OrderRoutes);
+app.use("/api/users", UserRoutes);
+
 app.get("/", (req, res) => {
-    res.send("Ecommerce  Server is running..!");
+    res.send("Ecommerce Inventory Server is running..!");
 });
-// Start Server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
-exports.default = app;
+
+export default app;
