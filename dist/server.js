@@ -1,43 +1,59 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
-const cors_1 = __importDefault(require("cors"));
-const dotenv_1 = __importDefault(require("dotenv"));
-const mongoose_1 = __importDefault(require("mongoose"));
-const product_routes_1 = require("./app/modules/products/product.routes");
-const order_routes_1 = require("./app/modules/orders/order.routes");
-const user_routes_1 = require("./app/modules/users/user.routes");
-dotenv_1.default.config();
-const app = (0, express_1.default)();
-const port = process.env.PORT || 5000;
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import { ProductRoutes } from "./app/modules/products/product.routes.js";
+import { OrderRoutes } from "./app/modules/orders/order.routes.js";
+import { UserRoutes } from "./app/modules/users/user.routes.js";
+
+dotenv.config();
+
+const app = express();
 const db_url = process.env.DB_URL;
-if (!db_url) {
-    console.error(" MongoDB connection string is missing!");
-    process.exit(1);
+
+// ------------------------------
+// FIX for Vercel: persistent MongoDB connection
+// ------------------------------
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected) return;
+
+  try {
+    const conn = await mongoose.connect(db_url, {
+      dbName: "ecommerce",
+    });
+
+    isConnected = conn.connections[0].readyState === 1;
+    console.log("✅ MongoDB Connected");
+  } catch (err) {
+    console.error("❌ MongoDB Error:", err.message);
+  }
 }
-// MongoDB connection
-mongoose_1.default
-    .connect(db_url)
-    .then(() => console.log(" Connected to MongoDB"))
-    .catch((err) => {
-    console.error(" MongoDB connection error:", err);
-    process.exit(1);
-});
+
+connectDB();
+
+// ------------------------------
 // Middleware
-app.use(express_1.default.json());
-app.use((0, cors_1.default)());
+// ------------------------------
+app.use(express.json());
+app.use(cors());
+
+// ------------------------------
 // Routes
-app.use("/api/products", product_routes_1.ProductRoutes);
-app.use("/api/orders", order_routes_1.OrderRoutes);
-app.use("/api/users", user_routes_1.UserRoutes);
+// ------------------------------
+app.use("/api/products", ProductRoutes);
+app.use("/api/orders", OrderRoutes);
+app.use("/api/users", UserRoutes);
+
 app.get("/", (req, res) => {
-    res.send("Ecommerce Inventory Server is running..!");
+  res.send("Ecommerce Inventory Server is running on Vercel!");
 });
-// Start Server
-app.listen(port, () => {
-    console.log(` Server is running on port ${port}`);
-});
-exports.default = app;
+
+// ------------------------------
+// ❌ DO NOT USE app.listen() ON VERCEL
+// ------------------------------
+// app.listen(5000, () => console.log("Server running")); // REMOVE THIS
+
+export default app;
