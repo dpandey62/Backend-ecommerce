@@ -1,11 +1,33 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import mongoose from "mongoose";
+
 import { ProductRoutes } from "./app/modules/products/product.routes.js";
 import { OrderRoutes } from "./app/modules/orders/order.routes.js";
 import { UserRoutes } from "./app/modules/users/user.routes.js";
 
+dotenv.config();
+
 const app = express();
-const port = process.env.PORT || 5000;
+const db_url = process.env.DB_URL;
+
+// MongoDB persistent connection (required for Vercel)
+let isConnected = false;
+
+async function connectDB() {
+    if (isConnected) return;
+
+    try {
+        const db = await mongoose.connect(db_url);
+        isConnected = db.connections[0].readyState === 1;
+        console.log("MongoDB Connected");
+    } catch (err) {
+        console.error("MongoDB Error:", err.message);
+    }
+}
+
+connectDB();
 
 // Middleware
 app.use(express.json());
@@ -17,12 +39,7 @@ app.use("/api/orders", OrderRoutes);
 app.use("/api/users", UserRoutes);
 
 app.get("/", (req, res) => {
-  res.send("Ecommerce  Server is running..!");
-});
-
-// Start Server
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+    res.send("Ecommerce Inventory Server is running..!");
 });
 
 export default app;
