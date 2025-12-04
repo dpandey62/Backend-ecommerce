@@ -2,47 +2,50 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { ProductRoutes } from "./app/modules/products/product.routes";
-import { OrderRoutes } from "./app/modules/orders/order.routes";
-import { UserRoutes } from "./app/modules/users/user.routes";
 
+import { ProductRoutes } from "./app/modules/products/product.routes.js";
+import { OrderRoutes } from "./app/modules/orders/order.routes.js";
+import { UserRoutes } from "./app/modules/users/user.routes.js";
 
-dotenv.config(); 
+dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 5000;
 const db_url = process.env.DB_URL;
 
-if (!db_url) {
-  console.error(" MongoDB connection string is missing!");
-  process.exit(1);
+// --------------------
+// FIX: Stable MongoDB connection for Vercel
+// --------------------
+let isConnected = false;
+
+async function connectDB() {
+  if (isConnected) return;
+
+  try {
+    const conn = await mongoose.connect(db_url);
+    isConnected = conn.connections[0].readyState === 1;
+    console.log("MongoDB connected");
+  } catch (err) {
+    console.error("MongoDB Error:", err);
+  }
 }
 
-// MongoDB connection
-mongoose
-  .connect(db_url )
-  .then(() => console.log(" Connected to MongoDB"))
-  .catch((err) => {
-    console.error(" MongoDB connection error:", err);
-    process.exit(1);
-  });
+connectDB();
 
-// Middleware
+// --------------------
 app.use(express.json());
 app.use(cors());
 
-// Routes
+// ROUTES
 app.use("/api/products", ProductRoutes);
 app.use("/api/orders", OrderRoutes);
 app.use("/api/users", UserRoutes);
 
+// ROOT
 app.get("/", (req, res) => {
-  res.send("Ecommerce Inventory Server is running..!");
+  res.send("Ecommerce Inventory Server running on Vercel!");
 });
 
-// Start Server
-app.listen(port, () => {
-  console.log(` Server is running on port ${port}`);
-});
+// ❌ DO NOT USE LISTEN() ON VERCEL
+// app.listen(5000, () => console.log("Server started"));
 
 export default app;
