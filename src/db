@@ -1,0 +1,29 @@
+import mongoose from "mongoose";
+
+let isConnected = false;
+
+export default async function connectDB() {
+  const mongoUri = process.env.MONGO_URI || process.env.DB_URL;
+  if (!mongoUri) {
+    // throw so caller logs it; do NOT process.exit here.
+    throw new Error("MONGO_URI / DB_URL environment variable is not set.");
+  }
+
+  if (isConnected) {
+    return;
+  }
+
+  try {
+    const conn = await mongoose.connect(mongoUri, {
+      // optional settings (Mongoose 7 works fine without extra settings)
+      // useNewUrlParser: true, useUnifiedTopology: true
+    });
+    isConnected = conn.connections[0].readyState === 1;
+    console.log("MongoDB connected");
+    return;
+  } catch (err) {
+    // rethrow so caller may log it; do NOT call process.exit
+    console.error("MongoDB connection error:", err);
+    throw err;
+  }
+}
